@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Neon Atlas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --background: 240 5% 2%;
+        --foreground: 0 0% 100%;
+        
+        --card: 245 25% 5%;
+        --card-foreground: 0 0% 100%;
+        
+        --popover: 245 25% 5%;
+        --popover-foreground: 0 0% 100%;
+        
+        --primary: 168 100% 50%; /* Neon Teal #00FFCC */
+        --primary-foreground: 240 5% 2%;
+        
+        --secondary: 290 100% 49%; /* Neon Magenta #F900CE */
+        --secondary-foreground: 0 0% 100%;
+        
+        --accent: 270 100% 47%; /* Neon Purple #8600F0 */
+        --accent-foreground: 0 0% 100%;
+        
+        --muted: 240 5% 15%;
+        --muted-foreground: 240 5% 65%;
+        
+        --destructive: 0 100% 50%;
+        --destructive-foreground: 0 0% 100%;
+        
+        --border: 0 0% 100%;
+        --input: 240 5% 20%;
+        --ring: 168 100% 50%;
+        
+        --radius: 1.75rem; /* 28px as requested */
+      }
+
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background-color: #050505;
+        color: #FFFFFF;
+        /* Subtle perspective grid background */
+        background-image: 
+          linear-gradient(rgba(134, 0, 240, 0.05) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(134, 0, 240, 0.05) 1px, transparent 1px);
+        background-size: 40px 40px;
+        overflow: hidden; /* Prevent body scroll, handle in app */
+      }
+      
+      h1, h2, h3, h4, .font-arcade {
+        font-family: 'Chakra Petch', sans-serif;
+        letter-spacing: 0.05em;
+      }
+
+      /* CRT Vignette effect */
+      body::after {
+        content: "";
+        position: fixed;
+        top: 0; 
+        left: 0;
+        width: 100vw; 
+        height: 100vh;
+        background: radial-gradient(circle, transparent 60%, black 100%);
+        pointer-events: none;
+        z-index: 50;
+      }
+
+      /* Map Grid Animation */
+      .bg-grid-pattern {
+        background-size: 40px 40px;
+        background-image: 
+          linear-gradient(to right, rgba(0, 255, 204, 0.05) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(0, 255, 204, 0.05) 1px, transparent 1px);
+      }
+
+      @keyframes dash {
+        to {
+          stroke-dashoffset: -20;
+        }
+      }
+      .animate-dash {
+        animation: dash 1s linear infinite;
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          container: {
+            center: true,
+            padding: "2rem",
+            screens: {
+              "2xl": "1400px",
+            },
+          },
+          extend: {
+            colors: {
+              border: "hsl(var(--border))",
+              input: "hsl(var(--input))",
+              ring: "hsl(var(--ring))",
+              background: "hsl(var(--background))",
+              foreground: "hsl(var(--foreground))",
+              primary: {
+                DEFAULT: "hsl(var(--primary))",
+                foreground: "hsl(var(--primary-foreground))",
+              },
+              secondary: {
+                DEFAULT: "hsl(var(--secondary))",
+                foreground: "hsl(var(--secondary-foreground))",
+              },
+              destructive: {
+                DEFAULT: "hsl(var(--destructive))",
+                foreground: "hsl(var(--destructive-foreground))",
+              },
+              muted: {
+                DEFAULT: "hsl(var(--muted))",
+                foreground: "hsl(var(--muted-foreground))",
+              },
+              accent: {
+                DEFAULT: "hsl(var(--accent))",
+                foreground: "hsl(var(--accent-foreground))",
+              },
+              popover: {
+                DEFAULT: "hsl(var(--popover))",
+                foreground: "hsl(var(--popover-foreground))",
+              },
+              card: {
+                DEFAULT: "hsl(var(--card))",
+                foreground: "hsl(var(--card-foreground))",
+              },
+            },
+            borderRadius: {
+              lg: "var(--radius)",
+              md: "calc(var(--radius) - 2px)",
+              sm: "calc(var(--radius) - 4px)",
+            },
+          },
+        },
+      }
+    </script>
+
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
+    "vite": "https://esm.sh/vite@^7.2.7"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/assets/index-Bcav--1k.js"></script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
