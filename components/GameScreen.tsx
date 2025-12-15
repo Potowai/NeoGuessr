@@ -129,6 +129,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
         // Actually, cleaner way with percentages if we used percentages in translate, but we use pixels.
         
         const containerWidth = mapContainerRef.current?.clientWidth || 800;
+        const containerHeight = mapContainerRef.current?.clientHeight || 400;
         
         // Approximate the map content dimensions
         // Note: mapContent uses width: 100%, aspect-ratio: 2/1. 
