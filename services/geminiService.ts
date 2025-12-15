@@ -510,6 +510,6 @@ export const fetchRandomLocation = async (): Promise<LocationData> => {
   return LOCATIONS[randomIndex];
 };
 
-export const getWikimediaImageUrl = (filename: string, width: number = 800) => {
+export const getWikimediaImageUrl = (filename: string) => {
   return filename; 
 };

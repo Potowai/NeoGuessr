@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/Card';
 import { Button } from './ui/Button';
 import { Play, PenTool, Globe, Trophy } from 'lucide-react';
 
