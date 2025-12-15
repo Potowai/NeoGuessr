@@ -58,7 +58,7 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-transparent text-foreground flex flex-col font-sans selection:bg-primary selection:text-black">
-      <main className={`flex-1 w-full mx-auto flex flex-col transition-all duration-300 ${view === GameView.PLAYING ? 'max-w-5xl p-2 md:p-6' : 'max-w-6xl p-6'}`}>
+      <main className={`flex-1 w-full mx-auto flex flex-col transition-all duration-300 ${view === GameView.PLAYING ? 'max-w-[1600px] p-2 md:p-6' : 'max-w-6xl p-6'}`}>
         {view === GameView.START && (
           <StartScreen 
             onStart={handleStartGame} 

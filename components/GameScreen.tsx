@@ -83,7 +83,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
 
   // Fit bounds logic when round is over
   useEffect(() => {
-    if (roundOver && userGuess && location && mapContentRef.current) {
+    if (roundOver && userGuess && location && mapContentRef.current && mapContainerRef.current) {
         // Calculate the bounding box of the two points (in percentage 0-100)
         const actualPos = latLngToPercent(location.coordinates.lat, location.coordinates.lng);
         
@@ -92,59 +92,69 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
         const minY = Math.min(userGuess.y, actualPos.y);
         const maxY = Math.max(userGuess.y, actualPos.y);
 
-        // Add padding (in percentage)
-        const paddingX = 20;
-        const paddingY = 20;
+        const width = Math.max(Math.abs(maxX - minX), 10); // Minimum width to prevent infinite zoom
+        const height = Math.max(Math.abs(maxY - minY), 10);
 
-        const width = maxX - minX + paddingX;
-        const height = maxY - minY + paddingY;
-
-        // Ensure we don't zoom in too crazily or zoom out too much
-        // Map is 2:1 aspect ratio.
-        // Viewport aspect ratio varies.
-        // Simple heuristic: Scale based on the wider dimension needed
+        // Map content is 2:1.
+        // We want to fit the bounding box into the container view.
+        // Container dimensions:
+        const containerW = mapContainerRef.current.clientWidth;
+        const containerH = mapContainerRef.current.clientHeight;
         
-        // At scale 1, we see 100% width. At scale 2, we see 50% width.
-        // requiredScale = 100 / width_percent
-        let targetScale = Math.min(100 / width, 100 / (height / 2)); // Divide height by 2 because map aspect is 2:1 but container might be different? 
-        // Actually, just fit to width is usually safer for world map unless vertical distance is huge.
+        // Map content logical dimensions (at scale 1):
+        // It fits width 100% of container (roughly) in our CSS setup?
+        // Actually map-content is width: 100%. So map logical width = containerW.
+        // Map logical height = containerW / 2.
         
-        // Clamp scale
-        targetScale = Math.min(Math.max(targetScale, 1), 6);
+        // Bounding box in pixels (at scale 1):
+        const boxW = (width / 100) * containerW;
+        const boxH = (height / 100) * (containerW / 2);
+        
+        // Scale needed to fit boxW into containerW (with padding)
+        const padding = 100; // pixels
+        const scaleX = (containerW - padding) / boxW;
+        const scaleY = (containerH - padding) / boxH;
+        
+        let targetScale = Math.min(scaleX, scaleY);
+        targetScale = Math.min(Math.max(targetScale, 1), 6); // Clamp
 
-        // Center point
+        // Center point in percentages
         const centerX = (minX + maxX) / 2;
         const centerY = (minY + maxY) / 2;
 
-        // To center (centerX, centerY) which are percentages:
-        // At scale S, the view center (which is 0,0 in translation space relative to scaled element?)
-        // Let's look at CSS: translate(x, y) scale(s)
-        // With origin center, the element scales from its center.
-        // To move (centerX, centerY) to the visual center, we need to translate.
-        // Center of map is 50, 50.
-        // Displacement needed: 50 - centerX, 50 - centerY.
-        // Convert to pixels?
-        // Since x, y in transform are pixels...
-        // mapContent width at scale 1 is ... let's assume we can calculate it from the container for now?
-        // Actually, cleaner way with percentages if we used percentages in translate, but we use pixels.
+        // Calculate translation to bring (centerX, centerY) to viewport center.
+        // At scale S, the map is S times bigger.
+        // The transform origin is center.
+        // Visual center of map at scale 1 is (50, 50).
+        // If we want (centerX, centerY) to be at visual center, we offset by (50 - centerX, 50 - centerY).
+        // Since transform scale applies after translate (or before depending on order? default matrix order usually translates then scales if written 'translate scale')
+        // But here we write `translate(x, y) scale(s)`.
+        // CSS transform order: right to left visually, but locally: translate moves it, then scale scales it at the origin.
+        // Actually it's simpler:
+        // shiftX = (50 - centerX)% of mapWidth
+        // shiftY = (50 - centerY)% of mapHeight
         
-        const containerWidth = mapContainerRef.current?.clientWidth || 800;
-        const containerHeight = mapContainerRef.current?.clientHeight || 400;
-        
-        // Approximate the map content dimensions
-        // Note: mapContent uses width: 100%, aspect-ratio: 2/1. 
-        // So mapWidth = containerWidth (roughly).
-        
-        const shiftXPercent = 50 - centerX;
-        const shiftYPercent = 50 - centerY;
-        
-        const pixelShiftX = (shiftXPercent / 100) * containerWidth;
-        // height is half of width usually due to 2:1 aspect ratio of map content
-        const pixelShiftY = (shiftYPercent / 100) * (containerWidth / 2); 
+        const pixelShiftX = ((50 - centerX) / 100) * containerW;
+        const pixelShiftY = ((50 - centerY) / 100) * (containerW / 2);
 
+        // Apply scale * shift? No, translate moves the element, then scale expands it.
+        // If origin is center: 
+        // We just need to move the logical center to the physical center.
+        // Since we scale around center, the centered point stays centered.
+        // So we just need to translate the desired center to the geometric center.
+        
+        // However, if we scale up, the "viewport" on the map shrinks.
+        // Let's rely on the translate being in unscaled pixels or scaled pixels?
+        // In CSS `transform: translate(Xpx, Ypx) scale(S)`, X and Y are in the coordinate system of the parent usually if they are percentages, but pixels are pixels.
+        // If we translate by 100px then scale by 2, visual shift is 100px * ? No, translate happens first.
+        
+        // Let's try this simple logic which works for 'origin-center':
+        // 1. Move map so target is at center.
+        // 2. Scale.
+        
         setMapTransform({
             scale: targetScale,
-            x: pixelShiftX, // We need to verify if this logic holds with the transform order
+            x: pixelShiftX,
             y: pixelShiftY
         });
     }
@@ -165,7 +175,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const scaleAmount = -e.deltaY * 0.001;
+    const scaleAmount = -e.deltaY * 0.003; // Increased speed (was 0.001)
     const newScale = Math.min(Math.max(1, mapTransform.scale + scaleAmount), 8);
     setMapTransform(prev => ({
       ...prev,
@@ -189,7 +199,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
       setIsDragging(true);
       setMapTransform(prev => ({
         ...prev,
-        x: prev.x + dx,
+        x: prev.x + dx, // Add logic to clamp panning if needed, but unbounded is fun too
         y: prev.y + dy
       }));
       dragStartRef.current = { x: e.clientX, y: e.clientY };
@@ -201,6 +211,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
     if (!isDragging) {
       handleMapClick(e);
     }
+  };
+
+  const handleMouseLeave = () => {
+    // When leaving the map (e.g., to click a button), cancel any drag but DO NOT trigger a click.
+    dragStartRef.current = null;
+    setIsDragging(false);
   };
 
   const handleMapClick = (e: React.MouseEvent) => {
@@ -268,7 +284,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
   const actualPos = roundOver ? latLngToPercent(location.coordinates.lat, location.coordinates.lng) : null;
 
   return (
-    <div className="relative w-full h-[85vh] bg-[#050505] rounded-[28px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 group select-none flex flex-col">
+    <div className="relative w-full h-[85vh] md:h-auto md:aspect-[2/1] md:min-h-[500px] bg-[#050505] rounded-[28px] overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 group select-none flex flex-col">
        
        {/* 1. Map Viewport */}
        <div 
@@ -277,7 +293,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
           className="relative w-full h-full bg-[#050810] cursor-crosshair overflow-hidden flex items-center justify-center bg-grid-pattern"
        >
           <div 
@@ -291,7 +307,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
             }}
           >
              {/* Map Image with Neon Filter */}
-             {/* We use invert to turn white into black, then adjust hue to make it blue/cyan */}
              <img 
                src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/2000px-World_map_-_low_resolution.svg.png" 
                alt="World Map"
@@ -440,7 +455,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({ onGameOver, currentScore
        {/* Round Result - Bottom Sheet style */}
        {roundOver && (
           <div className="absolute bottom-0 left-0 right-0 z-40 p-4 animate-in slide-in-from-bottom-full duration-500">
-             <Card className="w-full mx-auto max-w-xl pointer-events-auto border-t border-l border-r border-white/20 border-b-0 rounded-b-none bg-[#0A090F]/95 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+             <Card className="w-full mx-auto max-w-xl pointer-events-auto border-t border-l border-r border-white/20 md:border-b md:rounded-b-lg rounded-b-none bg-[#0A090F]/95 backdrop-blur-xl shadow-[0_-10px_40px_rgba(0,0,0,0.8)] md:shadow-[0_0_50px_rgba(0,0,0,0.8)] md:mb-6">
                 <div className="p-6 flex flex-col md:flex-row gap-6 items-center md:items-start">
                    
                    <div className="flex-1 space-y-2 text-center md:text-left">
